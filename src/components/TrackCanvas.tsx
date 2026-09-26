@@ -3,6 +3,46 @@ import { TrackConfig, RunnerData, TransmissionPoint } from '../store/sessionStor
 import { RelaySimulation, TrackMark, zoneAtDistance } from '../lib/trackMath'
 import './TrackCanvas.css'
 
+function loopPoint(
+  distancePx: number,
+  radius: number,
+  centerX: number,
+  centerY: number,
+  straightPx: number,
+) {
+  const loop = 2 * straightPx + 2 * Math.PI * radius
+  let d = distancePx % loop
+  if (d < 0) d += loop
+  if (d < straightPx) {
+    return { x: centerX - straightPx / 2 + d, y: centerY - radius }
+  }
+  if (d < straightPx + Math.PI * radius) {
+    const theta = -Math.PI / 2 + (d - straightPx) / radius
+    return {
+      x: centerX + straightPx / 2 + Math.cos(theta) * radius,
+      y: centerY + Math.sin(theta) * radius,
+    }
+  }
+  if (d < 2 * straightPx + Math.PI * radius) {
+    const along = d - (straightPx + Math.PI * radius)
+    return { x: centerX + straightPx / 2 - along, y: centerY + radius }
+  }
+  const theta = Math.PI / 2 + (d - (2 * straightPx + Math.PI * radius)) / radius
+  return {
+    x: centerX - straightPx / 2 + Math.cos(theta) * radius,
+    y: centerY + Math.sin(theta) * radius,
+  }
+}
+
+function travelPx(meters: number, scale: number, lengthPx: number, reversed: boolean, wrap: boolean) {
+  let px = meters * scale
+  if (wrap) px = ((px % lengthPx) + lengthPx) % lengthPx
+  else px = Math.max(0, Math.min(lengthPx, px))
+  if (!reversed) return px
+  const flipped = lengthPx - px
+  return wrap ? ((flipped % lengthPx) + lengthPx) % lengthPx : flipped
+}
+
 interface TrackCanvasProps {
   trackConfig: TrackConfig
   runners: RunnerData[]
@@ -39,6 +79,7 @@ const TrackCanvas = ({
   const simRef = useRef({ elapsed: 0, speed: 1, active: false })
   const [scale, setScale] = useState(1)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
+  const [reversed, setReversed] = useState(false)
 
   runnersRef.current = runners
   marksRef.current = marks
@@ -65,6 +106,39 @@ const TrackCanvas = ({
       const scaledStraightLength = straightLength * scale
       const scaledTrackWidth = trackWidth * scale
       const totalScaledHeight = trackConfig.lanes * scaledTrackWidth
+
+      const drawPill = (x: number, y: number, text: string, fill: string) => {
+        ctx.save()
+        ctx.font = '700 12px Arial'
+        const width = ctx.measureText(text).width + 20
+        const height = 22
+        ctx.beginPath()
+        ctx.roundRect(x - width / 2, y - height / 2, width, height, 11)
+        ctx.fillStyle = fill
+        ctx.fill()
+        ctx.fillStyle = '#fff'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(text, x, y + 0.5)
+        ctx.restore()
+      }
+
+      const drawChevron = (from: { x: number; y: number }, to: { x: number; y: number }) => {
+        const angle = Math.atan2(to.y - from.y, to.x - from.x)
+        ctx.save()
+        ctx.translate(from.x, from.y)
+        ctx.rotate(angle)
+        ctx.strokeStyle = 'rgba(255,255,255,0.95)'
+        ctx.lineWidth = 2
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+        ctx.beginPath()
+        ctx.moveTo(-7, -4)
+        ctx.lineTo(1, 0)
+        ctx.lineTo(-7, 4)
+        ctx.stroke()
+        ctx.restore()
+      }
 
       const drawMarker = (x: number, y: number, label: string) => {
         ctx.save()
@@ -167,91 +241,105 @@ const TrackCanvas = ({
         const startX = centerX - scaledStraightLength / 2
         const startY = centerY - totalScaledHeight / 2
 
-        if (layer !== 'dynamic') {
-          ctx.beginPath()
-          ctx.rect(startX - 20, startY, scaledStraightLength + 40, totalScaledHeight)
-          ctx.fillStyle = '#c85a40'
-          ctx.fill()
-          ctx.strokeStyle = '#fff'
-          ctx.stroke()
+        const xAt = (meters: number) => startX + travelPx(meters, scale, scaledStraightLength, reversed, false)
+        const span = (from: number, length: number) => {
+          const left = Math.min(xAt(from), xAt(from + length))
+          return { left, width: Math.abs(xAt(from + length) - xAt(from)) }
+        }
 
-          ctx.strokeStyle = '#fff'
-          ctx.lineWidth = 2
+        if (layer !== 'dynamic') {
+          ctx.fillStyle = '#f6f3ee'
+          ctx.fillRect(0, 0, dimensions.width, dimensions.height)
+
+          ctx.save()
+          ctx.shadowColor = 'rgba(33, 33, 33, 0.16)'
+          ctx.shadowBlur = 18
+          ctx.shadowOffsetY = 8
+          const surface = ctx.createLinearGradient(startX, startY, startX, startY + totalScaledHeight)
+          surface.addColorStop(0, '#e39a7c')
+          surface.addColorStop(0.5, '#d4785a')
+          surface.addColorStop(1, '#c46245')
+          ctx.fillStyle = surface
+          ctx.beginPath()
+          ctx.roundRect(startX - 8, startY, scaledStraightLength + 16, totalScaledHeight, 10)
+          ctx.fill()
+          ctx.restore()
+
+          ctx.strokeStyle = 'rgba(255,255,255,0.92)'
+          ctx.lineWidth = 1.5
           ctx.beginPath()
           for (let i = 0; i <= trackConfig.lanes; i++) {
             const y = startY + i * scaledTrackWidth
-            ctx.moveTo(startX - 20, y)
-            ctx.lineTo(startX + scaledStraightLength + 20, y)
+            ctx.moveTo(startX, y)
+            ctx.lineTo(startX + scaledStraightLength, y)
           }
           ctx.stroke()
 
-          ctx.fillStyle = '#fff'
-          ctx.font = '16px Arial'
+          ctx.font = '700 13px Arial'
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
+          const numberX = reversed ? startX + scaledStraightLength + 26 : startX - 26
           for (let i = 0; i < trackConfig.lanes; i++) {
             const y = startY + (i + 0.5) * scaledTrackWidth
-            ctx.fillText(`${i + 1}`, startX - 35, y)
+            ctx.beginPath()
+            ctx.fillStyle = '#212121'
+            ctx.arc(numberX, y, 11, 0, Math.PI * 2)
+            ctx.fill()
+            ctx.fillStyle = '#fff'
+            ctx.fillText(`${i + 1}`, numberX, y + 0.5)
           }
 
-          ctx.strokeStyle = '#fff'
-          ctx.lineWidth = 4
-          ctx.beginPath()
-          ctx.moveTo(startX, startY)
-          ctx.lineTo(startX, startY + totalScaledHeight)
-          ctx.stroke()
+          const paintLine = (meters: number, color: string) => {
+            const x = xAt(meters)
+            ctx.strokeStyle = color
+            ctx.lineWidth = 4
+            ctx.beginPath()
+            ctx.moveTo(x, startY)
+            ctx.lineTo(x, startY + totalScaledHeight)
+            ctx.stroke()
+          }
+          paintLine(0, '#ffffff')
+          paintLine(straightLength, '#212121')
+          drawPill(xAt(0), startY - 20, 'Départ', '#2e7d46')
+          drawPill(xAt(straightLength), startY - 20, 'Arrivée', '#212121')
 
-          ctx.beginPath()
-          ctx.moveTo(startX + scaledStraightLength, startY)
-          ctx.lineTo(startX + scaledStraightLength, startY + totalScaledHeight)
-          ctx.stroke()
+          for (const fraction of [0.28, 0.5, 0.72]) {
+            const meters = straightLength * fraction
+            drawChevron(
+              { x: xAt(meters), y: startY + 0.5 * scaledTrackWidth },
+              { x: xAt(meters + straightLength * 0.04), y: startY + 0.5 * scaledTrackWidth },
+            )
+          }
 
           trackConfig.transmissionZones.forEach((zone, index) => {
-            const zStart = startX + zone.start * scale
-            const zLength = zone.length * scale
-
             for (let lane = 0; lane < trackConfig.lanes; lane++) {
               if (zone.lane !== undefined && zone.lane !== lane + 1) continue
               const y = startY + lane * scaledTrackWidth
 
               if (zone.subZones && zone.subZones.length > 0) {
                 zone.subZones.forEach((sub) => {
-                  const sStart = zStart + sub.startOffset * scale
-                  const sLength = sub.length * scale
+                  const box = span(zone.start + sub.startOffset, sub.length)
                   ctx.fillStyle = sub.color
-                    ? sub.color.replace(')', ', 0.3)').replace('rgb', 'rgba')
-                    : 'rgba(255, 255, 0, 0.3)'
-                  ctx.fillRect(sStart, y, sLength, scaledTrackWidth)
-                  ctx.strokeStyle = sub.color || '#ffff00'
-                  ctx.lineWidth = 2
-                  ctx.beginPath()
-                  ctx.moveTo(sStart, y)
-                  ctx.lineTo(sStart, y + scaledTrackWidth)
-                  ctx.moveTo(sStart + sLength, y)
-                  ctx.lineTo(sStart + sLength, y + scaledTrackWidth)
-                  ctx.stroke()
+                    ? sub.color.replace(')', ', 0.35)').replace('rgb', 'rgba')
+                    : 'rgba(255, 107, 53, 0.35)'
+                  ctx.fillRect(box.left, y, box.width, scaledTrackWidth)
                 })
               } else {
-                ctx.fillStyle = 'rgba(255, 255, 0, 0.3)'
-                ctx.fillRect(zStart, y, zLength, scaledTrackWidth)
-                ctx.strokeStyle = '#ffff00'
-                ctx.lineWidth = 2
-                ctx.beginPath()
-                ctx.moveTo(zStart, y)
-                ctx.lineTo(zStart, y + scaledTrackWidth)
-                ctx.moveTo(zStart + zLength, y)
-                ctx.lineTo(zStart + zLength, y + scaledTrackWidth)
-                ctx.stroke()
-                ctx.fillStyle = '#000'
-                ctx.font = '12px Arial'
-                ctx.fillText(`Z${index + 1}`, zStart + zLength / 2, y + scaledTrackWidth / 2)
+                const box = span(zone.start, zone.length)
+                ctx.fillStyle = 'rgba(255, 107, 53, 0.38)'
+                ctx.fillRect(box.left, y, box.width, scaledTrackWidth)
+                ctx.fillStyle = '#fff'
+                ctx.font = '700 12px Arial'
+                ctx.textAlign = 'center'
+                ctx.textBaseline = 'middle'
+                ctx.fillText(`Z${index + 1}`, box.left + box.width / 2, y + scaledTrackWidth / 2)
               }
             }
           })
 
           trackConfig.speedPlots?.forEach((plot, index) => {
             if (plot.distance < 0 || plot.distance > straightLength) return
-            const x = startX + plot.distance * scale
+            const x = xAt(plot.distance)
             ctx.save()
             ctx.strokeStyle = '#1565c0'
             ctx.setLineDash([5, 4])
@@ -264,7 +352,7 @@ const TrackCanvas = ({
             ctx.font = 'bold 11px Arial'
             ctx.textAlign = 'center'
             ctx.textBaseline = 'bottom'
-            ctx.fillText(plot.label, x, startY - 6 - (index % 3) * 13)
+            ctx.fillText(plot.label, x, startY - 28 - (index % 3) * 13)
             ctx.restore()
           })
         }
@@ -274,7 +362,7 @@ const TrackCanvas = ({
             if (!runner.transmissionPoint) return
             const laneIndex = runner.transmissionPoint.lane - 1
             const y = startY + (laneIndex + 0.5) * scaledTrackWidth
-            const x = startX + runner.transmissionPoint.distance * scale
+            const x = xAt(runner.transmissionPoint.distance)
 
             ctx.beginPath()
             ctx.fillStyle = '#fff'
@@ -295,11 +383,11 @@ const TrackCanvas = ({
           const animated = relayRef.current && simRef.current.active ? null : getAnimatedRunner()
           if (animated) {
             const y = startY + (animated.lane - 0.5) * scaledTrackWidth
-            const x = startX + Math.max(0, Math.min(straightLength, animated.distance)) * scale
+            const x = xAt(Math.max(0, Math.min(straightLength, animated.distance)))
             drawMarker(x, y, `C${animated.runner.runnerId}`)
           }
           drawRelayAndMarks((distance, lane) => ({
-            x: startX + distance * scale,
+            x: xAt(distance),
             y: startY + (lane - 0.5) * scaledTrackWidth,
           }))
         }
@@ -315,96 +403,91 @@ const TrackCanvas = ({
           ctx.closePath()
         }
 
-        const getPositionAtDistance = (dist: number, radius: number) => {
-          const loopLength = 2 * scaledStraightLength + 2 * Math.PI * radius
-          let d = dist % loopLength
-          if (d < 0) d += loopLength
-
-          if (d < scaledStraightLength) {
-            return {
-              x: centerX - scaledStraightLength / 2 + d,
-              y: centerY - radius,
-            }
-          }
-          if (d < scaledStraightLength + Math.PI * radius) {
-            const angleInCurve = (d - scaledStraightLength) / radius
-            const theta = -Math.PI / 2 + angleInCurve
-            return {
-              x: centerX + scaledStraightLength / 2 + Math.cos(theta) * radius,
-              y: centerY + Math.sin(theta) * radius,
-            }
-          }
-          if (d < 2 * scaledStraightLength + Math.PI * radius) {
-            const distInStraight = d - (scaledStraightLength + Math.PI * radius)
-            return {
-              x: centerX + scaledStraightLength / 2 - distInStraight,
-              y: centerY + radius,
-            }
-          }
-          const distInCurve = d - (2 * scaledStraightLength + Math.PI * radius)
-          const theta = Math.PI / 2 + distInCurve / radius
-          return {
-            x: centerX - scaledStraightLength / 2 + Math.cos(theta) * radius,
-            y: centerY + Math.sin(theta) * radius,
-          }
+        const atRadius = (meters: number, radius: number) => {
+          const loop = 2 * scaledStraightLength + 2 * Math.PI * radius
+          return loopPoint(
+            travelPx(meters, scale, loop, reversed, true),
+            radius,
+            centerX,
+            centerY,
+            scaledStraightLength,
+          )
         }
 
         if (layer !== 'dynamic') {
-          ctx.fillStyle = '#c8e6c9'
+          ctx.fillStyle = '#f6f3ee'
+          ctx.fillRect(0, 0, dimensions.width, dimensions.height)
+
+          ctx.save()
+          ctx.shadowColor = 'rgba(33, 33, 33, 0.18)'
+          ctx.shadowBlur = 22
+          ctx.shadowOffsetY = 10
+          const clay = ctx.createLinearGradient(0, centerY - outerRadius, 0, centerY + outerRadius)
+          clay.addColorStop(0, '#e7a188')
+          clay.addColorStop(0.45, '#d4785a')
+          clay.addColorStop(1, '#c15a3e')
+          ctx.fillStyle = clay
           traceOval(outerRadius)
           ctx.fill()
-          ctx.strokeStyle = '#333'
-          ctx.lineWidth = 1
-          ctx.stroke()
+          ctx.restore()
 
-          ctx.fillStyle = '#2d5016'
+          const grass = ctx.createRadialGradient(centerX, centerY, innerRadius * 0.15, centerX, centerY, innerRadius)
+          grass.addColorStop(0, '#5cbc78')
+          grass.addColorStop(1, '#2f7d49')
+          ctx.fillStyle = grass
           traceOval(innerRadius)
           ctx.fill()
+
+          ctx.strokeStyle = 'rgba(255,255,255,0.95)'
+          ctx.lineWidth = 2.5
+          traceOval(outerRadius)
+          ctx.stroke()
+          ctx.lineWidth = 2
+          traceOval(innerRadius)
           ctx.stroke()
 
-          ctx.strokeStyle = '#fff'
-          ctx.lineWidth = 1
+          ctx.strokeStyle = 'rgba(255,255,255,0.8)'
+          ctx.lineWidth = 1.25
           for (let i = 1; i < trackConfig.lanes; i++) {
             traceOval(innerRadius + i * scaledTrackWidth)
             ctx.stroke()
           }
 
           trackConfig.transmissionZones.forEach((zone, index) => {
-            const zoneStart = zone.start * scale
-            const zoneLength = zone.length * scale
-            ctx.lineWidth = scaledTrackWidth
+            ctx.lineWidth = Math.max(4, scaledTrackWidth * 0.72)
+            ctx.lineCap = 'butt'
 
             for (let lane = 0; lane < trackConfig.lanes; lane++) {
               if (zone.lane !== undefined && zone.lane !== lane + 1) continue
               const laneCenterRadius = innerRadius + (lane + 0.5) * scaledTrackWidth
 
-              const drawSegment = (start: number, length: number, color: string) => {
+              const drawSegment = (startMeters: number, lengthMeters: number, color: string) => {
+                ctx.save()
                 ctx.strokeStyle = color
-                if (color.startsWith('#')) ctx.globalAlpha = 0.4
+                ctx.globalAlpha = 0.55
                 ctx.beginPath()
-                const steps = 10
+                const steps = 16
                 for (let s = 0; s <= steps; s++) {
-                  const d = start + s * (length / steps)
-                  const pos = getPositionAtDistance(d, laneCenterRadius)
+                  const pos = atRadius(startMeters + (s * lengthMeters) / steps, laneCenterRadius)
                   if (s === 0) ctx.moveTo(pos.x, pos.y)
                   else ctx.lineTo(pos.x, pos.y)
                 }
                 ctx.stroke()
-                ctx.globalAlpha = 1
+                ctx.restore()
               }
 
               if (zone.subZones && zone.subZones.length > 0) {
                 zone.subZones.forEach((sub) => {
-                  drawSegment((zone.start + sub.startOffset) * scale, sub.length * scale, sub.color || '#ff6b35')
+                  drawSegment(zone.start + sub.startOffset, sub.length, sub.color || '#ff6b35')
                 })
               } else {
-                drawSegment(zoneStart, zoneLength, '#ff6b35')
+                drawSegment(zone.start, zone.length, '#ff6b35')
               }
 
-              const midPos = getPositionAtDistance(zoneStart + zoneLength / 2, laneCenterRadius)
+              const midPos = atRadius(zone.start + zone.length / 2, laneCenterRadius)
               ctx.save()
-              ctx.fillStyle = '#000'
-              ctx.font = '10px Arial'
+              ctx.fillStyle = '#fff'
+              ctx.font = '700 11px Arial'
               ctx.textAlign = 'center'
               ctx.textBaseline = 'middle'
               ctx.fillText(`Z${index + 1}`, midPos.x, midPos.y)
@@ -413,38 +496,55 @@ const TrackCanvas = ({
           })
 
           const plotRadius = innerRadius + 0.5 * scaledTrackWidth
+          const laneLap = 2 * straightLength + 2 * Math.PI * (curveRadius + 0.5 * trackWidth)
           trackConfig.speedPlots?.forEach((plot, index) => {
-            const loop = 2 * scaledStraightLength + 2 * Math.PI * plotRadius
-            if (plot.distance < 0 || plot.distance * scale > loop) return
-            const pos = getPositionAtDistance(plot.distance * scale, plotRadius)
+            if (plot.distance < 0 || plot.distance > laneLap) return
+            const pos = atRadius(plot.distance, plotRadius)
             ctx.save()
             ctx.fillStyle = '#1565c0'
             ctx.beginPath()
             ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2)
             ctx.fill()
+            ctx.strokeStyle = '#fff'
+            ctx.lineWidth = 1.5
+            ctx.stroke()
+            ctx.fillStyle = '#1565c0'
             ctx.font = 'bold 11px Arial'
             ctx.textAlign = 'center'
             ctx.fillText(plot.label, pos.x, pos.y - 16 - (index % 4) * 13)
             ctx.restore()
           })
 
-          const startX = centerX - scaledStraightLength / 2
+          const lineTop = atRadius(0, outerRadius)
+          const lineBottom = atRadius(0, innerRadius)
           ctx.beginPath()
           ctx.strokeStyle = '#fff'
-          ctx.lineWidth = 3
-          ctx.moveTo(startX, centerY - innerRadius)
-          ctx.lineTo(startX, centerY - outerRadius)
+          ctx.lineWidth = 4
+          ctx.moveTo(lineBottom.x, lineBottom.y)
+          ctx.lineTo(lineTop.x, lineTop.y)
           ctx.stroke()
-          ctx.fillStyle = '#333'
-          ctx.font = '12px Arial'
-          ctx.fillText('Départ', startX - 5, centerY - outerRadius - 10)
+          ctx.beginPath()
+          ctx.strokeStyle = '#212121'
+          ctx.lineWidth = 1.5
+          ctx.moveTo(lineBottom.x, lineBottom.y)
+          ctx.lineTo(lineTop.x, lineTop.y)
+          ctx.stroke()
+
+          const labelShift = reversed ? -34 : 34
+          drawPill(lineTop.x + labelShift, lineTop.y - 18, 'Départ', '#2e7d46')
+          drawPill(lineTop.x - labelShift, lineTop.y - 18, 'Arrivée', '#212121')
+
+          for (const fraction of [0.12, 0.37, 0.62, 0.86]) {
+            const meters = laneLap * fraction
+            drawChevron(atRadius(meters, plotRadius), atRadius(meters + 3, plotRadius))
+          }
         }
 
         if (layer !== 'static') {
           runners.forEach((runner) => {
             if (!runner.transmissionPoint) return
             const laneCenterRadius = innerRadius + (runner.transmissionPoint.lane - 0.5) * scaledTrackWidth
-            const pos = getPositionAtDistance(runner.transmissionPoint.distance * scale, laneCenterRadius)
+            const pos = atRadius(runner.transmissionPoint.distance, laneCenterRadius)
 
             ctx.beginPath()
             ctx.fillStyle = '#ff6b35'
@@ -462,16 +562,16 @@ const TrackCanvas = ({
           const animated = relayRef.current && simRef.current.active ? null : getAnimatedRunner()
           if (animated) {
             const laneCenterRadius = innerRadius + (animated.lane - 0.5) * scaledTrackWidth
-            const pos = getPositionAtDistance(animated.distance * scale, laneCenterRadius)
+            const pos = atRadius(animated.distance, laneCenterRadius)
             drawMarker(pos.x, pos.y, `C${animated.runner.runnerId}`)
           }
           drawRelayAndMarks((distance, lane) =>
-            getPositionAtDistance(distance * scale, innerRadius + (lane - 0.5) * scaledTrackWidth)
+            atRadius(distance, innerRadius + (lane - 0.5) * scaledTrackWidth)
           )
         }
       }
     },
-    [trackConfig, runners, dimensions, scale, straightLength, curveRadius, trackWidth, trackType]
+    [trackConfig, runners, dimensions, scale, straightLength, curveRadius, trackWidth, trackType, reversed]
   )
 
   drawRef.current = drawTrack
@@ -551,7 +651,7 @@ const TrackCanvas = ({
     bufferContext.setTransform(dpr, 0, 0, dpr, 0, 0)
     drawRef.current(bufferContext, 'static')
     paintRef.current()
-  }, [dimensions, scale, trackConfig])
+  }, [dimensions, scale, trackConfig, reversed])
 
   useEffect(() => {
     if (simRef.current.active) return
@@ -621,7 +721,8 @@ const TrackCanvas = ({
       if (relativeY < 0 || relativeY > totalScaledHeight) return null
 
       const lane = Math.floor(relativeY / scaledTrackWidth) + 1
-      const distance = (x - startX) / scale
+      const visual = (x - startX) / scale
+      const distance = reversed ? straightLength - visual : visual
       if (distance < 0 || distance > straightLength) return null
 
       return {
@@ -629,31 +730,6 @@ const TrackCanvas = ({
         y,
         distance,
         lane: Math.max(1, Math.min(trackConfig.lanes, lane)),
-      }
-    }
-
-    const pointOnOval = (dist: number, radius: number) => {
-      const loopLength = 2 * scaledStraightLength + 2 * Math.PI * radius
-      let d = dist % loopLength
-      if (d < 0) d += loopLength
-      if (d < scaledStraightLength) {
-        return { x: centerX - scaledStraightLength / 2 + d, y: centerY - radius }
-      }
-      if (d < scaledStraightLength + Math.PI * radius) {
-        const theta = -Math.PI / 2 + (d - scaledStraightLength) / radius
-        return {
-          x: centerX + scaledStraightLength / 2 + Math.cos(theta) * radius,
-          y: centerY + Math.sin(theta) * radius,
-        }
-      }
-      if (d < 2 * scaledStraightLength + Math.PI * radius) {
-        const distInStraight = d - (scaledStraightLength + Math.PI * radius)
-        return { x: centerX + scaledStraightLength / 2 - distInStraight, y: centerY + radius }
-      }
-      const theta = Math.PI / 2 + (d - (2 * scaledStraightLength + Math.PI * radius)) / radius
-      return {
-        x: centerX - scaledStraightLength / 2 + Math.cos(theta) * radius,
-        y: centerY + Math.sin(theta) * radius,
       }
     }
 
@@ -666,13 +742,14 @@ const TrackCanvas = ({
       const steps = 140
       for (let step = 0; step <= steps; step++) {
         const along = (step / steps) * loop
-        const pos = pointOnOval(along, radius)
-        const dx = pos.x - x
-        const dy = pos.y - y
-        const gap = Math.hypot(dx, dy)
+        const pos = loopPoint(along, radius, centerX, centerY, scaledStraightLength)
+        const gap = Math.hypot(pos.x - x, pos.y - y)
         if (gap < bestDistance) {
+          const visualMeters = along / scale
+          const loopMeters = loop / scale
+          const distance = reversed ? (loopMeters - visualMeters) % loopMeters : visualMeters
           bestDistance = gap
-          best = { x: pos.x, y: pos.y, distance: along / scale, lane }
+          best = { x: pos.x, y: pos.y, distance, lane }
         }
       }
     }
@@ -689,33 +766,19 @@ const TrackCanvas = ({
       const startX = centerX - scaledStraightLength / 2
       const startY = centerY - totalScaledHeight / 2
       return {
-        x: startX + distance * scale,
+        x: startX + travelPx(distance, scale, scaledStraightLength, reversed, false),
         y: startY + (lane - 0.5) * scaledTrackWidth,
       }
     }
     const radius = curveRadius * scale + (lane - 0.5) * scaledTrackWidth
     const loopLength = 2 * scaledStraightLength + 2 * Math.PI * radius
-    let d = (distance * scale) % loopLength
-    if (d < 0) d += loopLength
-    if (d < scaledStraightLength) {
-      return { x: centerX - scaledStraightLength / 2 + d, y: centerY - radius }
-    }
-    if (d < scaledStraightLength + Math.PI * radius) {
-      const theta = -Math.PI / 2 + (d - scaledStraightLength) / radius
-      return {
-        x: centerX + scaledStraightLength / 2 + Math.cos(theta) * radius,
-        y: centerY + Math.sin(theta) * radius,
-      }
-    }
-    if (d < 2 * scaledStraightLength + Math.PI * radius) {
-      const distInStraight = d - (scaledStraightLength + Math.PI * radius)
-      return { x: centerX + scaledStraightLength / 2 - distInStraight, y: centerY + radius }
-    }
-    const theta = Math.PI / 2 + (d - (2 * scaledStraightLength + Math.PI * radius)) / radius
-    return {
-      x: centerX - scaledStraightLength / 2 + Math.cos(theta) * radius,
-      y: centerY + Math.sin(theta) * radius,
-    }
+    return loopPoint(
+      travelPx(distance, scale, loopLength, reversed, true),
+      radius,
+      centerX,
+      centerY,
+      scaledStraightLength,
+    )
   }
 
   const assignPoint = (clientX: number, clientY: number) => {
@@ -768,6 +831,9 @@ const TrackCanvas = ({
           <div className="simulation-indicator">Simulation en cours</div>
         </div>
       )}
+      <button type="button" className="direction-button" onClick={() => setReversed((current) => !current)}>
+        Inverser le sens
+      </button>
     </div>
   )
 }
