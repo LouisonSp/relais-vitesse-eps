@@ -1,0 +1,149 @@
+.home-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+  padding: 20px;
+}
+
+.home-container {
+  width: 100%;
+  max-width: 1200px;
+  text-align: center;
+}
+
+.home-header {
+  margin-bottom: 60px;
+}
+
+.home-header h1 {
+  font-size: 48px;
+  color: var(--color-orange);
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-size: 20px;
+  color: var(--color-gray-dark);
+}
+
+.role-selection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 40px;
+  margin-top: 40px;
+}
+
+.role-card {
+  background-color: var(--color-white);
+  border: 3px solid var(--color-gray);
+  border-radius: 16px;
+  padding: 40px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.role-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  border-color: var(--color-orange);
+}
+
+.student-card:hover {
+  border-color: var(--color-orange);
+}
+
+.teacher-card:hover {
+  border-color: #4caf50;
+}
+
+.role-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.role-card h2 {
+  font-size: 28px;
+  color: var(--color-black);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.role-card > p {
+  font-size: 16px;
+  color: var(--color-gray-dark);
+  margin-bottom: 24px;
+}
+
+.role-features {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+  text-align: left;
+}
+
+.role-features li {
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--color-black);
+}
+
+.role-button {
+  margin-top: 24px;
+  padding: 14px 32px;
+  background-color: var(--color-orange);
+  color: var(--color-white);
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.role-button:hover {
+  background-color: var(--color-orange-dark);
+}
+
+.teacher-card .role-button {
+  background-color: #4caf50;
+}
+
+.teacher-card .role-button:hover {
+  background-color: #45a049;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .home-header h1 {
+    font-size: 32px;
+  }
+
+  .role-selection {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .role-card {
+    padding: 24px;
+  }
+
+  .role-icon {
+    font-size: 48px;
+  }
+
+  .role-card h2 {
+    font-size: 24px;
+  }
+}
+
+/* Tablette */
+@media (min-width: 481px) and (max-width: 768px) {
+  .role-selection {
+    grid-template-columns: 1fr;
+  }
+}

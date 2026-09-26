@@ -1,0 +1,187 @@
+.video-capture-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.video-capture-modal {
+  background-color: var(--color-white);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.video-capture-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.video-capture-header h3 {
+  color: var(--color-orange);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--color-gray-dark);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.close-button:hover {
+  background-color: var(--color-gray-light);
+  color: var(--color-black);
+}
+
+.error-message {
+  padding: 12px;
+  background-color: #ffebee;
+  border: 1px solid #ef5350;
+  border-radius: 8px;
+  color: #c62828;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.video-preview-container {
+  margin-bottom: 20px;
+  background-color: var(--color-black);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.video-preview {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  display: block;
+}
+
+.video-capture-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.record-button,
+.stop-button,
+.save-button,
+.retry-button,
+.cancel-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.record-button {
+  background-color: #f44336;
+  color: var(--color-white);
+}
+
+.record-button:hover {
+  background-color: #d32f2f;
+}
+
+.stop-button {
+  background-color: #757575;
+  color: var(--color-white);
+}
+
+.stop-button:hover {
+  background-color: #616161;
+}
+
+.save-button {
+  background-color: var(--color-orange);
+  color: var(--color-white);
+}
+
+.save-button:hover {
+  background-color: var(--color-orange-dark);
+}
+
+.retry-button {
+  background-color: var(--color-white);
+  color: var(--color-orange);
+  border: 2px solid var(--color-orange);
+}
+
+.retry-button:hover {
+  background-color: var(--color-gray-light);
+}
+
+.cancel-button {
+  background-color: var(--color-white);
+  color: var(--color-gray-dark);
+  border: 2px solid var(--color-gray);
+}
+
+.cancel-button:hover {
+  background-color: var(--color-gray-light);
+}
+
+/* Mobile optimisations */
+@media (max-width: 480px) {
+  .video-capture-modal {
+    width: 95%;
+    max-width: none;
+    padding: 16px;
+    margin: 10px;
+  }
+
+  .video-capture-header h3 {
+    font-size: 18px;
+  }
+
+  .video-preview {
+    max-height: 250px;
+  }
+
+  .video-capture-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .record-button,
+  .stop-button,
+  .save-button,
+  .retry-button,
+  .cancel-button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+  }
+}
+
+/* Tablette */
+@media (min-width: 481px) and (max-width: 768px) {
+  .video-capture-modal {
+    max-width: 550px;
+  }
+
+  .video-preview {
+    max-height: 350px;
+  }
+}

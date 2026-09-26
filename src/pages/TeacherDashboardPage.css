@@ -1,0 +1,151 @@
+.teacher-dashboard-page {
+  min-height: 100vh;
+  background-color: var(--color-white);
+}
+
+.teacher-header {
+  background-color: var(--color-white);
+  border-bottom: 3px solid #4caf50;
+  padding: 20px;
+}
+
+.header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.teacher-header h1 {
+  color: #4caf50;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.teacher-name {
+  font-weight: 600;
+  color: var(--color-black);
+}
+
+.logout-button {
+  padding: 8px 16px;
+  background-color: var(--color-white);
+  color: #4caf50;
+  border: 2px solid #4caf50;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-button:hover {
+  background-color: #4caf50;
+  color: var(--color-white);
+}
+
+.teacher-main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--color-gray);
+  flex-wrap: wrap;
+}
+
+.tab-button {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-gray-dark);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.tab-button:hover {
+  color: #4caf50;
+  background-color: #f1f8f4;
+}
+
+.tab-button.active {
+  color: #4caf50;
+  border-bottom-color: #4caf50;
+  background-color: #f1f8f4;
+}
+
+.tab-content {
+  background-color: var(--color-white);
+  border: 2px solid var(--color-gray);
+  border-radius: 8px;
+  padding: 24px;
+  min-height: 400px;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .teacher-header {
+    padding: 12px 16px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .teacher-header h1 {
+    font-size: 20px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .logout-button {
+    width: auto;
+  }
+
+  .teacher-main {
+    padding: 20px 16px;
+  }
+
+  .tabs {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tab-button {
+    width: 100%;
+    text-align: left;
+    border-bottom: none;
+    border-left: 3px solid transparent;
+    margin-bottom: 0;
+  }
+
+  .tab-button.active {
+    border-left-color: #4caf50;
+    border-bottom-color: transparent;
+  }
+
+  .tab-content {
+    padding: 16px;
+  }
+}

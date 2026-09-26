@@ -1,0 +1,60 @@
+.track-canvas-container {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 200px);
+  min-height: 600px;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray);
+  border-radius: 8px;
+  overflow: hidden;
+  touch-action: none; /* Éviter le scroll pendant le dessin */
+}
+
+/* Mobile optimisations */
+@media (max-width: 480px) {
+  .track-canvas-container {
+    height: calc(100vh - 150px);
+    min-height: 400px;
+    border-radius: 6px;
+  }
+}
+
+/* Tablette */
+@media (min-width: 481px) and (max-width: 768px) {
+  .track-canvas-container {
+    height: calc(100vh - 180px);
+    min-height: 500px;
+  }
+}
+
+/* Orientation paysage mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .track-canvas-container {
+    height: calc(100vh - 120px);
+    min-height: 400px;
+  }
+}
+
+.track-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.simulation-overlay {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.simulation-indicator {
+  padding: 16px 24px;
+  background-color: var(--color-orange);
+  color: var(--color-white);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 18px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}

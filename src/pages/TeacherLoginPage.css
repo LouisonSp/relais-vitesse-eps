@@ -1,0 +1,164 @@
+.teacher-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f8f0 100%);
+  padding: 20px;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 450px;
+  background-color: var(--color-white);
+  border: 3px solid #4caf50;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.back-to-home {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  padding: 8px 12px;
+  background: none;
+  border: 1px solid var(--color-gray);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--color-gray-dark);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-to-home:hover {
+  background-color: var(--color-gray-light);
+  border-color: var(--color-gray-dark);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+  margin-top: 20px;
+}
+
+.teacher-icon {
+  font-size: 64px;
+  margin-bottom: 12px;
+}
+
+.login-header h1 {
+  color: #4caf50;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--color-gray-dark);
+  font-size: 16px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  color: var(--color-black);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.form-group input {
+  padding: 12px;
+  border: 2px solid var(--color-gray);
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #4caf50;
+}
+
+.form-group .hint {
+  font-size: 12px;
+  color: var(--color-gray-dark);
+  margin-top: 4px;
+}
+
+.error-message {
+  padding: 12px;
+  background-color: #ffebee;
+  border: 1px solid #ef5350;
+  border-radius: 8px;
+  color: #c62828;
+  font-size: 14px;
+}
+
+.login-button {
+  padding: 14px;
+  background-color: #4caf50;
+  color: var(--color-white);
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.login-button:hover {
+  background-color: #45a049;
+}
+
+.login-button:active {
+  transform: scale(0.98);
+}
+
+.demo-info {
+  margin-top: 24px;
+  padding: 12px;
+  background-color: #e8f5e9;
+  border-radius: 8px;
+  border-left: 4px solid #4caf50;
+}
+
+.demo-text {
+  font-size: 13px;
+  color: #2e7d32;
+  margin: 0;
+  text-align: center;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 24px 20px;
+  }
+
+  .teacher-icon {
+    font-size: 48px;
+  }
+
+  .login-header h1 {
+    font-size: 24px;
+  }
+
+  .back-to-home {
+    position: relative;
+    top: 0;
+    left: 0;
+    margin-bottom: 16px;
+  }
+}

@@ -1,0 +1,128 @@
+.situation-card {
+  background-color: var(--color-white);
+  border: 2px solid var(--color-orange);
+  border-radius: 8px;
+  padding: 20px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.situation-card.empty {
+  border-color: var(--color-gray);
+}
+
+.situation-header {
+  border-bottom: 2px solid var(--color-orange);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.situation-card.empty .situation-header {
+  border-bottom-color: var(--color-gray);
+}
+
+.situation-header h3 {
+  color: var(--color-orange);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.situation-card.empty .situation-header h3 {
+  color: var(--color-gray-dark);
+}
+
+.empty-state {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-gray-dark);
+  font-size: 14px;
+}
+
+.situation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.situation-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-title {
+  color: var(--color-orange);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.section-text {
+  color: var(--color-black);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.section-list {
+  color: var(--color-black);
+  font-size: 14px;
+  line-height: 1.8;
+  padding-left: 20px;
+  margin: 0;
+}
+
+.section-list li {
+  margin-bottom: 4px;
+}
+
+/* Scrollbar styling */
+.situation-card::-webkit-scrollbar {
+  width: 8px;
+}
+
+.situation-card::-webkit-scrollbar-track {
+  background: var(--color-gray-light);
+  border-radius: 4px;
+}
+
+.situation-card::-webkit-scrollbar-thumb {
+  background: var(--color-orange);
+  border-radius: 4px;
+}
+
+.situation-card::-webkit-scrollbar-thumb:hover {
+  background: var(--color-orange-dark);
+}
+
+/* Mobile optimisations */
+@media (max-width: 480px) {
+  .situation-card {
+    padding: 16px;
+    max-height: 400px;
+  }
+
+  .situation-header h3 {
+    font-size: 16px;
+  }
+
+  .section-title {
+    font-size: 14px;
+  }
+
+  .section-text,
+  .section-list {
+    font-size: 13px;
+  }
+
+  .section-list {
+    padding-left: 18px;
+  }
+}
+
+/* Tablette */
+@media (min-width: 481px) and (max-width: 768px) {
+  .situation-card {
+    max-height: 500px;
+  }
+}
